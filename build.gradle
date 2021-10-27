@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+}
+
+ext {
+    mainClassName = 'com.anyicomplex.bmfontx.BMFontX'
+    appName = 'BMFontX'
+    appVersion = '0.0.1'
+    appVersionCode = 1
+    flatlafVersion = '1.6.1'
+    gdxVersion = '1.10.0'
+}
+
+group 'com.anyicomplex'
+version appVersion
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.formdev:flatlaf:$flatlafVersion"
+
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+}
+
+task dist(type: Jar) {
+    manifest {
+        attributes 'Main-Class': project.mainClassName
+        attributes 'Specification-Title': appName
+        attributes 'Specification-Version': appVersion
+        attributes 'Implementation-Version': appVersionCode
+    }
+    archiveName('bmfontx.jar')
+    dependsOn configurations.runtimeClasspath
+    dependsOn classes
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
+task distRun(dependsOn: dist, type: JavaExec) {
+    classpath = files('build/libs/bmfontx.jar')
+}
