@@ -1,8 +1,9 @@
 # BMFontX
 Cross-platform bitmap font packing tool. Based on [Hiero](https://github.com/libgdx/libgdx/wiki/Hiero)' s open source.
-
-# Display
 ![](https://github.com/anyicomplex/bmfontx/blob/master/assets/image_0.png)
+
+# Download
+https://github.com/anyicomplex/bmfontx/releases
 
 
 # License
