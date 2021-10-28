@@ -1,51 +1,34 @@
-/*
- * Copyright (C) 2021 Yi An
- *
- *     This program is based on the open source of Hiero v5 <https://github.com/libgdx/libgdx/wiki/Hiero>,
- *     powered by Java & libGDX.
- *     This project also using FlatLaf <https://github.com/JFormDesigner/FlatLaf>.
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * libGDX Copyright:
- *
+/*******************************************************************************
  * Copyright 2011 See AUTHORS file.
- *
- *     Licensed under the Apache License, Version 2.0 (the "License");
- *     you may not use this file except in compliance with the License.
- *     You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
- */
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 
 package com.anyicomplex.bmfontx.unicodefont.effects;
 
 import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
+import com.badlogic.gdx.utils.Array;
 
-import java.awt.*;
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
 /** @author Nathan Sweet */
 public class ShadowEffect implements ConfigurableEffect {
@@ -77,8 +60,7 @@ public class ShadowEffect implements ConfigurableEffect {
 		g.fill(glyph.getShape());
 
 		// Also shadow the outline, if one exists.
-		for (Object o : unicodeFont.getEffects()) {
-			Effect effect = (Effect) o;
+		for (Effect effect : unicodeFont.getEffects()) {
 			if (effect instanceof OutlineEffect) {
 				Composite composite = g.getComposite();
 				g.setComposite(AlphaComposite.Src); // Prevent shadow and outline shadow alpha from combining.
@@ -165,8 +147,8 @@ public class ShadowEffect implements ConfigurableEffect {
 		return "Shadow";
 	}
 
-	public List<Value> getValues () {
-		List<Value> values = new ArrayList<>();
+	public Array<Value> getValues () {
+		Array<Value> values = new Array<>();
 		values.add(EffectUtils.colorValue("Color", color));
 		values.add(EffectUtils.floatValue("Opacity", opacity, 0, 1, "This setting sets the translucency of the shadow."));
 		values.add(EffectUtils.floatValue("X distance", xDistance, -99, 99, "This setting is the amount of pixels to offset the "
@@ -174,11 +156,11 @@ public class ShadowEffect implements ConfigurableEffect {
 		values.add(EffectUtils.floatValue("Y distance", yDistance, -99, 99, "This setting is the amount of pixels to offset the "
 			+ "shadow on the y axis. The glyphs will need padding so the shadow doesn't get clipped."));
 
-		List<String[]> options = new ArrayList<>();
+		Array<String[]> options = new Array<>();
 		options.add(new String[] {"None", "0"});
 		for (int i = 2; i < NUM_KERNELS; i++)
 			options.add(new String[] {String.valueOf(i)});
-		String[][] optionsArray = (String[][])options.toArray(new String[options.size()][]);
+		String[][] optionsArray = options.toArray(String[].class);
 		values.add(EffectUtils.optionValue("Blur kernel size", String.valueOf(blurKernelSize), optionsArray,
 			"This setting controls how many neighboring pixels are used to blur the shadow. Set to \"None\" for no blur."));
 
@@ -187,7 +169,7 @@ public class ShadowEffect implements ConfigurableEffect {
 		return values;
 	}
 
-	public void setValues (List<Value> values) {
+	public void setValues (Array<Value> values) {
 		for (Value value : values) {
 			if (value.getName().equals("Color")) {
 				color = (Color) value.getObject();

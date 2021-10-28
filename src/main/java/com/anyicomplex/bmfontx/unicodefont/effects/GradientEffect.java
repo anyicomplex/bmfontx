@@ -39,12 +39,10 @@ package com.anyicomplex.bmfontx.unicodefont.effects;
 
 import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
+import com.badlogic.gdx.utils.Array;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 /** Paints glyphs with a gradient fill.
  * @author Nathan Sweet
@@ -67,7 +65,7 @@ public class GradientEffect implements ConfigurableEffect {
 	public void draw (BufferedImage image, Graphics2D g, UnicodeFont unicodeFont, Glyph glyph) {
 		int ascent = unicodeFont.getAscent();
 		float height = (ascent) * scale;
-		float top = -glyph.getYOffset() + unicodeFont.getDescent() + offset + ascent / 2 - height / 2;
+		float top = -glyph.getYOffset() + unicodeFont.getDescent() + offset + ascent / 2.0f - height / 2;
 		g.setPaint(new GradientPaint(0, top, topColor, 0, top + height, bottomColor, cyclic));
 		g.fill(glyph.getShape());
 	}
@@ -119,8 +117,8 @@ public class GradientEffect implements ConfigurableEffect {
 		return "Gradient";
 	}
 
-	public List getValues () {
-		List values = new ArrayList();
+	public Array<Value> getValues () {
+		Array<Value> values = new Array<>();
 		values.add(EffectUtils.colorValue("Top color", topColor));
 		values.add(EffectUtils.colorValue("Bottom color", bottomColor));
 		values.add(EffectUtils.intValue("Offset", offset,
@@ -131,19 +129,18 @@ public class GradientEffect implements ConfigurableEffect {
 		return values;
 	}
 
-	public void setValues (List values) {
-		for (Iterator iter = values.iterator(); iter.hasNext();) {
-			Value value = (Value)iter.next();
+	public void setValues (Array<Value> values) {
+		for (Value value : values) {
 			if (value.getName().equals("Top color")) {
-				topColor = (Color)value.getObject();
+				topColor = (Color) value.getObject();
 			} else if (value.getName().equals("Bottom color")) {
-				bottomColor = (Color)value.getObject();
+				bottomColor = (Color) value.getObject();
 			} else if (value.getName().equals("Offset")) {
-				offset = ((Integer)value.getObject()).intValue();
+				offset = (Integer) value.getObject();
 			} else if (value.getName().equals("Scale")) {
-				scale = ((Float)value.getObject()).floatValue();
+				scale = (Float) value.getObject();
 			} else if (value.getName().equals("Cyclic")) {
-				cyclic = ((Boolean)value.getObject()).booleanValue();
+				cyclic = (Boolean) value.getObject();
 			}
 		}
 	}

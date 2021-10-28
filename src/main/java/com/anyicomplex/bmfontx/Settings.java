@@ -41,12 +41,11 @@ import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
 import com.anyicomplex.bmfontx.unicodefont.effects.ConfigurableEffect;
 import com.anyicomplex.bmfontx.unicodefont.effects.Effect;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Holds the settings needed to configure a UnicodeFont.
  * @author Nathan Sweet
@@ -60,7 +59,7 @@ public class Settings {
 	private int paddingTop, paddingLeft, paddingBottom, paddingRight, paddingAdvanceX, paddingAdvanceY;
 	private int glyphPageWidth = 512, glyphPageHeight = 512;
 	private String glyphText = "";
-	private final List<Effect> effects = new ArrayList<>();
+	private final Array<Effect> effects = new Array<>();
 	private boolean nativeRendering;
 	private boolean font2Active = false;
 	private String font2File = "";
@@ -69,10 +68,10 @@ public class Settings {
 	public Settings() {
 	}
 
-	/** @param hieroFileRef The file system or classpath location of the BMFontX settings file. */
-	public Settings(String hieroFileRef) {
+	/** @param bmfontxFileRef The file system or classpath location of the BMFontX settings file. */
+	public Settings(String bmfontxFileRef) {
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(Gdx.files.absolute(hieroFileRef).read(), StandardCharsets.UTF_8));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(Gdx.files.absolute(bmfontxFileRef).read(), StandardCharsets.UTF_8));
 			while (true) {
 				String line = reader.readLine();
 				if (line == null) break;
@@ -128,8 +127,8 @@ public class Settings {
 				} else if (name.startsWith("effect.")) {
 					// Set an effect value on the last added effect.
 					name = name.substring(7);
-					ConfigurableEffect effect = (ConfigurableEffect)effects.get(effects.size() - 1);
-					List<ConfigurableEffect.Value> values = effect.getValues();
+					ConfigurableEffect effect = (ConfigurableEffect)effects.get(effects.size - 1);
+					Array<ConfigurableEffect.Value> values = effect.getValues();
 					for (ConfigurableEffect.Value effectValue : values) {
 						if (effectValue.getName().equals(name)) {
 							effectValue.setString(value);
@@ -141,7 +140,7 @@ public class Settings {
 			}
 			reader.close();
 		} catch (Throwable ex) {
-			throw new GdxRuntimeException("Unable to load BMFontX font file: " + hieroFileRef, ex);
+			throw new GdxRuntimeException("Unable to load BMFontX font file: " + bmfontxFileRef, ex);
 		}
 	}
 
@@ -274,7 +273,7 @@ public class Settings {
 	}
 
 	/** @see UnicodeFont#getEffects() */
-	public List<Effect> getEffects () {
+	public Array<Effect> getEffects () {
 		return effects;
 	}
 
@@ -372,4 +371,5 @@ public class Settings {
 	public int getRenderType () {
 		return renderType;
 	}
+
 }

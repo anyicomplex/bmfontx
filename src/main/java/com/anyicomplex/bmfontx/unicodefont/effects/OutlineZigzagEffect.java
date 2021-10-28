@@ -37,11 +37,12 @@
 
 package com.anyicomplex.bmfontx.unicodefont.effects;
 
+import com.badlogic.gdx.utils.Array;
+
 import java.awt.*;
 import java.awt.geom.FlatteningPathIterator;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.PathIterator;
-import java.util.List;
 
 /** @author Jerry Huxtable
  * @author Nathan Sweet
@@ -62,8 +63,8 @@ public class OutlineZigzagEffect extends OutlineEffect {
 		return "Outline (Zigzag)";
 	}
 
-	public List<Value> getValues () {
-		List<Value> values = super.getValues();
+	public Array<Value> getValues () {
+		Array<Value> values = super.getValues();
 		values.add(EffectUtils.floatValue("Wavelength", wavelength, 1, 100, "This setting controls the wavelength of the outline. "
 			+ "The smaller the value, the more segments will be used to draw the outline."));
 		values.add(EffectUtils.floatValue("Amplitude", amplitude, 0.5f, 50,
@@ -71,7 +72,7 @@ public class OutlineZigzagEffect extends OutlineEffect {
 		return values;
 	}
 
-	public void setValues (List<Value> values) {
+	public void setValues (Array<Value> values) {
 		super.setValues(values);
 		for (Value value : values) {
 			if (value.getName().equals("Wavelength")) {

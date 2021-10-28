@@ -58,8 +58,10 @@ import java.awt.font.GlyphVector;
 import java.awt.font.TextAttribute;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 // BOZO - Look at actual pixels to determine glyph size, current size sometimes selects blank pixels (eg Calibri, 45, 'o').
 
@@ -80,9 +82,9 @@ public class UnicodeFont {
 	private String ttfFileRef;
 	private int ascent, descent, leading, spaceWidth;
 	private final Glyph[][] glyphs = new Glyph[PAGES][];
-	private final List<GlyphPage> glyphPages = new ArrayList<>();
-	private final List<Glyph> queuedGlyphs = new ArrayList<>(256);
-	private final List<Effect> effects = new ArrayList<>();
+	private final Array<GlyphPage> glyphPages = new Array<>();
+	private final Array<Glyph> queuedGlyphs = new Array<>(256);
+	private final Array<Effect> effects = new Array<>();
 	private int paddingTop, paddingLeft, paddingBottom, paddingRight, paddingAdvanceX, paddingAdvanceY;
 	private Glyph missingGlyph;
 	private int glyphPageWidth = 512, glyphPageHeight = 512;
@@ -96,9 +98,9 @@ public class UnicodeFont {
 	private float gamma;
 
 	/** @param ttfFileRef The file system or classpath location of the TrueTypeFont file.
-	 * @param hieroFileRef The file system or classpath location of the BMFontX settings file. */
-	public UnicodeFont (String ttfFileRef, String hieroFileRef) {
-		this(ttfFileRef, new Settings(hieroFileRef));
+	 * @param bmfontxFileRef The file system or classpath location of the BMFontX settings file. */
+	public UnicodeFont (String ttfFileRef, String bmfontxFileRef) {
+		this(ttfFileRef, new Settings(bmfontxFileRef));
 	}
 
 	/** @param ttfFileRef The file system or classpath location of the TrueTypeFont file. */
@@ -116,9 +118,9 @@ public class UnicodeFont {
 	}
 
 	/** Creates a new UnicodeFont.
-	 * @param hieroFileRef The file system or classpath location of the BMFontX settings file. */
-	public UnicodeFont (Font font, String hieroFileRef) {
-		this(font, new Settings(hieroFileRef));
+	 * @param bmfontxFileRef The file system or classpath location of the BMFontX settings file. */
+	public UnicodeFont (Font font, String bmfontxFileRef) {
+		this(font, new Settings(bmfontxFileRef));
 	}
 
 	/** Creates a new UnicodeFont. */
@@ -138,12 +140,13 @@ public class UnicodeFont {
 	}
 
 	private void initializeFont (Font baseFont, int size, boolean bold, boolean italic) {
-		Map attributes = baseFont.getAttributes();
+		Map<TextAttribute, Object> attributes = new HashMap<>(baseFont.getAttributes());
 		attributes.put(TextAttribute.SIZE, (float) size);
 		attributes.put(TextAttribute.WEIGHT, bold ? TextAttribute.WEIGHT_BOLD : TextAttribute.WEIGHT_REGULAR);
 		attributes.put(TextAttribute.POSTURE, italic ? TextAttribute.POSTURE_OBLIQUE : TextAttribute.POSTURE_REGULAR);
 		try {
-			attributes.put(TextAttribute.class.getDeclaredField("KERNING").get(null),
+			attributes.put(
+					(TextAttribute) TextAttribute.class.getDeclaredField("KERNING").get(null),
 				TextAttribute.class.getDeclaredField("KERNING_ON").get(null));
 		} catch (Throwable ignored) {
 		}
@@ -607,12 +610,12 @@ public class UnicodeFont {
 	}
 
 	/** Returns the GlyphPages for this UnicodeFont. */
-	public List<GlyphPage> getGlyphPages () {
+	public Array<GlyphPage> getGlyphPages () {
 		return glyphPages;
 	}
 
 	/** Returns a list of {@link Effect}s that will be applied to the glyphs. */
-	public List<Effect> getEffects () {
+	public Array<Effect> getEffects () {
 		return effects;
 	}
 

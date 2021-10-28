@@ -40,12 +40,11 @@ package com.anyicomplex.bmfontx.unicodefont.effects;
 import com.anyicomplex.bmfontx.distancefield.DistanceFieldGenerator;
 import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
+import com.badlogic.gdx.utils.Array;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 
 /** A filter to create a distance field. The resulting font can be rendered with a simple custom shader to draw bitmap fonts that
  * remain crisp even under high magnification.
@@ -98,8 +97,8 @@ public class DistanceFieldEffect implements ConfigurableEffect {
 	}
 
 	@Override
-	public List<Value> getValues () {
-		List<Value> values = new ArrayList<>();
+	public Array<Value> getValues () {
+		Array<Value> values = new Array<>();
 		values.add(EffectUtils.colorValue("Color", color));
 		values.add(EffectUtils.intValue("Scale", scale,
 			"The distance field is computed from an image larger than the output glyph by this factor. Set this to a higher value for more accuracy, but slower font generation."));
@@ -109,7 +108,7 @@ public class DistanceFieldEffect implements ConfigurableEffect {
 	}
 
 	@Override
-	public void setValues (List<Value> values) {
+	public void setValues (Array<Value> values) {
 		for (Value value : values) {
 			if ("Color".equals(value.getName())) {
 				color = (Color) value.getObject();

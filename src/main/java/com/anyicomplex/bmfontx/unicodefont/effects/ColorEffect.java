@@ -39,11 +39,10 @@ package com.anyicomplex.bmfontx.unicodefont.effects;
 
 import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
+import com.badlogic.gdx.utils.Array;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Makes glyphs a solid color.
  * @author Nathan Sweet
@@ -79,13 +78,13 @@ public class ColorEffect implements ConfigurableEffect {
 		return "Color";
 	}
 
-	public List<Value> getValues () {
-		List<Value> values = new ArrayList<>();
+	public Array<Value> getValues () {
+		Array<Value> values = new Array<>();
 		values.add(EffectUtils.colorValue("Color", color));
 		return values;
 	}
 
-	public void setValues (List<Value> values) {
+	public void setValues (Array<Value> values) {
 		for (Value value : values) {
 			if (value.getName().equals("Color")) {
 				setColor((Color) value.getObject());

@@ -44,27 +44,32 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl.LwjglCanvas;
+import com.badlogic.gdx.backends.lwjgl.LwjglPreferences;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.GdxRuntimeException;
+import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.utils.StringBuilder;
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatIntelliJLaf;
-import org.lwjgl.opengl.GL11;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.icons.*;
+import com.sun.java.swing.plaf.windows.WindowsScrollPaneUI;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.*;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.metal.MetalScrollPaneUI;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
-import java.util.prefs.Preferences;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -77,8 +82,8 @@ import static org.lwjgl.opengl.GL11.*;
 public class BMFontX extends JFrame {
 	UnicodeFont unicodeFont;
 	Color renderingBackgroundColor;
-	List<EffectPanel> effectPanels = new ArrayList<>();
-	Preferences prefs;
+	Array<EffectPanel> effectPanels = new Array<>();
+	LwjglPreferences prefs;
 	ColorEffect colorEffect;
 	boolean batchMode = false;
 
@@ -128,14 +133,21 @@ public class BMFontX extends JFrame {
 	JMenuItem saveMenuItem;
 	JMenuItem exitMenuItem;
 	JMenuItem saveBMFontMenuItem;
-	File saveBmFontFile;
+	File saveBMFontFile;
 	String lastSaveFilename = "", lastSaveBMFilename = "", lastOpenFilename = "";
 	JPanel effectsPanel;
 	JScrollPane effectsScroll;
 	JPanel unicodePanel, bitmapPanel;
 
 	public BMFontX (String[] args) {
-		super("BMFontX v0.0.1 [Build 001] - Bitmap Font Tool");
+		super();
+
+		String appName = BMFontX.class.getPackage().getSpecificationTitle();
+		String version = BMFontX.class.getPackage().getSpecificationVersion();
+		String versionCode = BMFontX.class.getPackage().getImplementationVersion();
+		if (versionCode.length() == 2) versionCode = "0" + versionCode;
+		if (versionCode.length() == 1) versionCode = "00" + versionCode;
+		setTitle(appName + " v" + version + " [Build " + versionCode + "] - Bitmap Font Tool");
 
 		initialize();
 
@@ -146,15 +158,31 @@ public class BMFontX extends JFrame {
 		rendererCanvas = new LwjglCanvas(new Renderer(), renderConfig);
 		gamePanel.add(rendererCanvas.getCanvas());
 
-		prefs = Preferences.userNodeForPackage(BMFontX.class);
-		java.awt.Color backgroundColor = EffectUtils.fromString(prefs.get("background", "000000"));
+		String storageRelativePath = "";
+		if (SharedLibraryLoader.isWindows) {
+			if (System.getProperties().getProperty("os.name").equals("Windows XP")) {
+				storageRelativePath = "Application Data/anyicomplex/tools/";
+			}
+			else {
+				storageRelativePath = "AppData/Roaming/anyicomplex/tools/";
+			}
+		}
+		if (SharedLibraryLoader.isLinux) {
+			storageRelativePath = ".local/share/anyicomplex/tools/";
+		}
+		if (SharedLibraryLoader.isMac) {
+			storageRelativePath = "Library/Application Support/";
+		}
+		storageRelativePath += "/" + appName + "/";
+		prefs = new LwjglPreferences("preferences.xml", storageRelativePath);
+		java.awt.Color backgroundColor = EffectUtils.fromString(prefs.getString("background", "000000"));
 		backgroundColorLabel.setIcon(getColorIcon(backgroundColor));
 		renderingBackgroundColor = new Color(backgroundColor.getRed() / 255f, backgroundColor.getGreen() / 255f,
 			backgroundColor.getBlue() / 255f, 1);
-		fontList.setSelectedValue(prefs.get("system.font", "Arial"), true);
-		fontFileText.setText(prefs.get("font.file", ""));
+		fontList.setSelectedValue(prefs.getString("system.font", "Arial"), true);
+		fontFileText.setText(prefs.getString("font.file", ""));
 
-		java.awt.Color foregroundColor = EffectUtils.fromString(prefs.get("foreground", "ffffff"));
+		java.awt.Color foregroundColor = EffectUtils.fromString(prefs.getString("foreground", "ffffff"));
 		colorEffect = new ColorEffect();
 		colorEffect.setColor(foregroundColor);
 		effectsListModel.addElement(colorEffect);
@@ -167,6 +195,12 @@ public class BMFontX extends JFrame {
 		new EffectPanel(colorEffect);
 
 		parseArgs(args);
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				prefs.flush();
+			}
+		});
 
 		addWindowListener(new WindowAdapter() {
 			public void windowClosed (WindowEvent event) {
@@ -208,7 +242,7 @@ public class BMFontX extends JFrame {
 				updateFont();
 			} else if (more && (param.equals("-o") || param.equals("--output"))) {
 				File f = new File(args[++i]);
-				saveBm(f);
+				saveBMFont(f);
 			} else {
 				System.err.println("Unknown parameter: " + param);
 				exit(3);
@@ -250,8 +284,8 @@ public class BMFontX extends JFrame {
 		if (file != null) {
 			// Load from file.
 			try {
-				unicodeFont = new UnicodeFont(fontFileText.getText(), fontSize, boldCheckBox.isSelected(),
-					italicCheckBox.isSelected());
+				unicodeFont = new UnicodeFont(fontFileText.getText(), fontSize, !isFreeType && boldCheckBox.isSelected(),
+						!isFreeType && italicCheckBox.isSelected());
 			} catch (Throwable ex) {
 				ex.printStackTrace();
 				fontFileRadio.setSelected(false);
@@ -260,8 +294,8 @@ public class BMFontX extends JFrame {
 
 		if (unicodeFont == null) {
 			// Load from java.awt.Font (kerning not available!).
-			unicodeFont = new UnicodeFont(Font.decode(fontList.getSelectedValue()), fontSize, boldCheckBox.isSelected(),
-				italicCheckBox.isSelected());
+			unicodeFont = new UnicodeFont(Font.decode(fontList.getSelectedValue()), fontSize, !isFreeType && boldCheckBox.isSelected(),
+					!isFreeType && italicCheckBox.isSelected());
 		}
 
 		unicodeFont.setMono(monoCheckBox.isSelected());
@@ -300,11 +334,11 @@ public class BMFontX extends JFrame {
 		updateFontSelector();
 	}
 
-	void saveBm (File file) {
-		saveBmFontFile = file;
+	void saveBMFont (File file) {
+		saveBMFontFile = file;
 	}
 
-	void save (File file) throws IOException {
+	void saveSettings (File file) throws IOException {
 		Settings settings = new Settings();
 		settings.setFontName(fontList.getSelectedValue());
 		settings.setFontSize((Integer) fontSizeSpinner.getValue());
@@ -336,7 +370,8 @@ public class BMFontX extends JFrame {
 	}
 
 	void open (File file) {
-		EffectPanel[] panels = effectPanels.toArray(new EffectPanel[0]);
+
+		EffectPanel[] panels = effectPanels.toArray();
 		for (EffectPanel panel : panels) panel.remove();
 
 		Settings settings = new Settings(file.getAbsolutePath());
@@ -368,7 +403,7 @@ public class BMFontX extends JFrame {
 		if (font2.length() > 0)
 			fontFileText.setText(font2);
 		else
-			fontFileText.setText(prefs.get("font.file", ""));
+			fontFileText.setText(prefs.getString("font.file", ""));
 
 		fontFileRadio.setSelected(settings.isFont2Active());
 		systemFontRadio.setSelected(!settings.isFont2Active());
@@ -401,7 +436,7 @@ public class BMFontX extends JFrame {
 		fontList.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged (ListSelectionEvent evt) {
 				if (evt.getValueIsAdjusting()) return;
-				prefs.put("system.font", fontList.getSelectedValue());
+				prefs.putString("system.font", fontList.getSelectedValue());
 				updateFont();
 			}
 		});
@@ -482,7 +517,7 @@ public class BMFontX extends JFrame {
 			private void changed () {
 				File file = new File(fontFileText.getText());
 				if (fontList.isEnabled() && (!file.exists() || !file.isFile())) return;
-				prefs.put("font.file", fontFileText.getText());
+				prefs.putString("font.file", fontFileText.getText());
 				updateFont();
 			}
 		});
@@ -499,29 +534,31 @@ public class BMFontX extends JFrame {
 
 		browseButton.addActionListener(new ActionListener() {
 			public void actionPerformed (ActionEvent evt) {
-				FileDialog dialog = new FileDialog(BMFontX.this, "Choose TrueType font file", FileDialog.LOAD);
-				dialog.setLocationRelativeTo(null);
-				dialog.setFile("*.ttf");
-				dialog.setDirectory(prefs.get("dir.font", ""));
-				dialog.setVisible(true);
-				if (dialog.getDirectory() != null) {
-					prefs.put("dir.font", dialog.getDirectory());
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setMultiSelectionEnabled(false);
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("TrueType Font (*.ttf)", "ttf");
+				fileChooser.setFileFilter(filter);
+				fileChooser.setDialogTitle("Choose a TrueType Font file");
+				fileChooser.setAcceptAllFileFilterUsed(false);
+				fileChooser.setCurrentDirectory(new File(prefs.getString("dir.font", System.getProperty("user.home"))));
+				int returnVal = fileChooser.showOpenDialog(BMFontX.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					if (file == null) return;
+					fontFileText.setText(file.getAbsolutePath());
 				}
-
-				String fileName = dialog.getFile();
-				if (fileName == null) return;
-				fontFileText.setText(new File(dialog.getDirectory(), fileName).getAbsolutePath());
+				if (fileChooser.getCurrentDirectory() != null) prefs.putString("dir.font", fileChooser.getCurrentDirectory().getAbsolutePath());
 			}
 		});
 
 		backgroundColorLabel.addMouseListener(new MouseAdapter() {
 			public void mouseClicked (MouseEvent evt) {
 				java.awt.Color color = JColorChooser.showDialog(null, "Choose a background color",
-					EffectUtils.fromString(prefs.get("background", "000000")));
+					EffectUtils.fromString(prefs.getString("background", "000000")));
 				if (color == null) return;
 				renderingBackgroundColor = new Color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 1);
 				backgroundColorLabel.setIcon(getColorIcon(color));
-				prefs.put("background", EffectUtils.toString(color));
+				prefs.putString("background", EffectUtils.toString(color));
 			}
 		});
 
@@ -554,76 +591,80 @@ public class BMFontX extends JFrame {
 
 		openMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed (ActionEvent evt) {
-				FileDialog dialog = new FileDialog(BMFontX.this, "Open BMFontX settings file", FileDialog.LOAD);
-				dialog.setLocationRelativeTo(null);
-				dialog.setFile("*.BMFontX");
-				dialog.setDirectory(prefs.get("dir.open", ""));
-				dialog.setVisible(true);
-				if (dialog.getDirectory() != null) {
-					prefs.put("dir.open", dialog.getDirectory());
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setMultiSelectionEnabled(false);
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("BMFontX Settings File (*.bmfontx)", "bmfontx");
+				fileChooser.setFileFilter(filter);
+				fileChooser.setDialogTitle("Choose a BMFont Settings file");
+				fileChooser.setAcceptAllFileFilterUsed(false);
+				fileChooser.setCurrentDirectory(new File(prefs.getString("dir.openSettings", System.getProperty("user.home"))));
+				int returnVal = fileChooser.showOpenDialog(BMFontX.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					if (file == null) return;
+					lastOpenFilename = file.getName();
+					open(file);
 				}
-
-				String fileName = dialog.getFile();
-				if (fileName == null) return;
-				lastOpenFilename = fileName;
-				open(new File(dialog.getDirectory(), fileName));
+				if (fileChooser.getCurrentDirectory() != null) prefs.putString("dir.openSettings", fileChooser.getCurrentDirectory().getAbsolutePath());
 			}
 		});
 
 		saveMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed (ActionEvent evt) {
-				FileDialog dialog = new FileDialog(BMFontX.this, "Save BMFontX settings file", FileDialog.SAVE);
-				dialog.setLocationRelativeTo(null);
-				dialog.setFile("*.BMFontX");
-				dialog.setDirectory(prefs.get("dir.save", ""));
-
-				if (lastSaveFilename.length() > 0) {
-					dialog.setFile(lastSaveFilename);
-				} else if (lastOpenFilename.length() > 0) {
-					dialog.setFile(lastOpenFilename);
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setMultiSelectionEnabled(false);
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("BMFontX Settings File (*.bmfontx)", "bmfontx");
+				fileChooser.setFileFilter(filter);
+				fileChooser.setDialogTitle("Save BMFontX Settings file");
+				fileChooser.setAcceptAllFileFilterUsed(false);
+				fileChooser.setCurrentDirectory(new File(prefs.getString("dir.saveSettings", System.getProperty("user.home"))));
+				int returnVal = fileChooser.showSaveDialog(BMFontX.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					if (file == null) return;
+					if (lastSaveFilename.length() > 0) {
+						fileChooser.setSelectedFile(new File(lastSaveFilename));
+					} else if (lastOpenFilename.length() > 0) {
+						fileChooser.setSelectedFile(new File(lastOpenFilename));
+					}
+					String fileName = file.getName();
+					if (!fileName.endsWith(".bmfontx")) fileName += ".bmfontx";
+					lastSaveFilename = fileName;
+					try {
+						saveSettings(new File(fileChooser.getCurrentDirectory(), fileName));
+					}
+					catch (IOException ex) {
+						throw new RuntimeException("Error saving BMFontX settings file: " + file.getAbsolutePath(), ex);
+					}
 				}
-
-				dialog.setVisible(true);
-
-				if (dialog.getDirectory() != null) {
-					prefs.put("dir.save", dialog.getDirectory());
-				}
-
-				String fileName = dialog.getFile();
-				if (fileName == null) return;
-				if (!fileName.endsWith(".BMFontX")) fileName += ".BMFontX";
-				lastSaveFilename = fileName;
-				File file = new File(dialog.getDirectory(), fileName);
-				try {
-					save(file);
-				} catch (IOException ex) {
-					throw new RuntimeException("Error saving BMFontX settings file: " + file.getAbsolutePath(), ex);
-				}
+				if (fileChooser.getCurrentDirectory() != null) prefs.putString("dir.saveSettings", fileChooser.getCurrentDirectory().getAbsolutePath());
 			}
 		});
 
 		saveBMFontMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed (ActionEvent evt) {
-				FileDialog dialog = new FileDialog(BMFontX.this, "Save BMFont files", FileDialog.SAVE);
-				dialog.setLocationRelativeTo(null);
-				dialog.setFile("*.fnt");
-				dialog.setDirectory(prefs.get("dir.savebm", ""));
-
-				if (lastSaveBMFilename.length() > 0) {
-					dialog.setFile(lastSaveBMFilename);
-				} else if (lastOpenFilename.length() > 0) {
-					dialog.setFile(lastOpenFilename.replace(".BMFontX", ".fnt"));
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setMultiSelectionEnabled(false);
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Bitmap Font (*.fnt)", "fnt");
+				fileChooser.setFileFilter(filter);
+				fileChooser.setDialogTitle("Save Bitmap Font files");
+				fileChooser.setAcceptAllFileFilterUsed(false);
+				fileChooser.setCurrentDirectory(new File(prefs.getString("dir.saveFont", System.getProperty("user.home"))));
+				int returnVal = fileChooser.showSaveDialog(BMFontX.this);
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					if (file == null) return;
+					if (lastSaveBMFilename.length() > 0) {
+						fileChooser.setSelectedFile(new File(lastSaveBMFilename));
+					}
+					else if (lastOpenFilename.length() > 0) {
+						fileChooser.setSelectedFile(new File(lastOpenFilename.replace(".bmfontx", ".fnt")));
+					}
+					String fileName = file.getName();
+					lastSaveBMFilename = fileName;
+					saveBMFont(new File(fileChooser.getCurrentDirectory(), fileName));
 				}
-
-				dialog.setVisible(true);
-				if (dialog.getDirectory() != null) {
-					prefs.put("dir.savebm", dialog.getDirectory());
-				}
-
-				String fileName = dialog.getFile();
-				if (fileName == null) return;
-				lastSaveBMFilename = fileName;
-				saveBm(new File(dialog.getDirectory(), fileName));
+				if (fileChooser.getCurrentDirectory() != null) prefs.putString("dir.saveFont", fileChooser.getCurrentDirectory().getAbsolutePath());
 			}
 		});
 
@@ -684,6 +725,8 @@ public class BMFontX extends JFrame {
 			}
 			{
 				JScrollPane fontScroll = new JScrollPane();
+				fontScroll.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
+				fontScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 14));
 				fontPanel.add(fontScroll, new GridBagConstraints(1, 1, 3, 1, 1.0, 1.0, GridBagConstraints.CENTER,
 					GridBagConstraints.BOTH, new Insets(0, 0, 5, 5), 0, 0));
 				{
@@ -801,6 +844,7 @@ public class BMFontX extends JFrame {
 			samplePanel.setBorder(BorderFactory.createTitledBorder("Sample Text"));
 			{
 				JScrollPane textScroll = new JScrollPane();
+				textScroll.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
 				samplePanel.add(textScroll, new GridBagConstraints(0, 0, 4, 1, 1.0, 1.0, GridBagConstraints.CENTER,
 					GridBagConstraints.BOTH, new Insets(0, 5, 5, 5), 0, 0));
 				{
@@ -1016,6 +1060,8 @@ public class BMFontX extends JFrame {
 			effectsPanel.setMinimumSize(new Dimension(210, 1));
 			{
 				effectsScroll = new JScrollPane();
+				effectsScroll.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
+				effectsScroll.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 14));
 				effectsPanel.add(effectsScroll, new GridBagConstraints(1, 0, 1, 1, 1.0, 0.0, GridBagConstraints.NORTH,
 					GridBagConstraints.HORIZONTAL, new Insets(0, 5, 5, 5), 0, 0));
 				{
@@ -1035,6 +1081,7 @@ public class BMFontX extends JFrame {
 			}
 			{
 				appliedEffectsScroll = new JScrollPane();
+				appliedEffectsScroll.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
 				effectsPanel.add(appliedEffectsScroll, new GridBagConstraints(1, 3, 1, 1, 1.0, 1.0, GridBagConstraints.NORTH,
 					GridBagConstraints.BOTH, new Insets(0, 0, 5, 0), 0, 0));
 				appliedEffectsScroll.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -1063,22 +1110,26 @@ public class BMFontX extends JFrame {
 				JMenu fileMenu = new JMenu();
 				menuBar.add(fileMenu);
 				fileMenu.setText("File");
+				fileMenu.setIcon(new FlatFileViewComputerIcon());
 				fileMenu.setMnemonic(KeyEvent.VK_F);
 				{
 					openMenuItem = new JMenuItem("Open BMFontX settings file...");
+					openMenuItem.setIcon(new FlatFileViewFileIcon());
 					openMenuItem.setMnemonic(KeyEvent.VK_O);
 					openMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_MASK));
 					fileMenu.add(openMenuItem);
 				}
 				{
 					saveMenuItem = new JMenuItem("Save BMFontX settings file...");
+					saveMenuItem.setIcon(new FlatFileViewFloppyDriveIcon());
 					saveMenuItem.setMnemonic(KeyEvent.VK_S);
 					saveMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_MASK));
 					fileMenu.add(saveMenuItem);
 				}
 				fileMenu.addSeparator();
 				{
-					saveBMFontMenuItem = new JMenuItem("Save BMFont files (text)...");
+					saveBMFontMenuItem = new JMenuItem("Save BMFont files...");
+					saveBMFontMenuItem.setIcon(new FlatFileViewFloppyDriveIcon());
 					saveBMFontMenuItem.setMnemonic(KeyEvent.VK_B);
 					saveBMFontMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B, KeyEvent.CTRL_MASK));
 					fileMenu.add(saveBMFontMenuItem);
@@ -1087,6 +1138,7 @@ public class BMFontX extends JFrame {
 				{
 					exitMenuItem = new JMenuItem("Exit");
 					exitMenuItem.setMnemonic(KeyEvent.VK_X);
+					exitMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.CTRL_MASK));
 					fileMenu.add(exitMenuItem);
 				}
 			}
@@ -1107,7 +1159,7 @@ public class BMFontX extends JFrame {
 		final java.awt.Color selectedColor = new java.awt.Color(0xb1d2e9);
 
 		final ConfigurableEffect effect;
-		List<ConfigurableEffect.Value> values;
+		Array<ConfigurableEffect.Value> values;
 
 		JButton upButton;
 		JButton downButton;
@@ -1157,26 +1209,20 @@ public class BMFontX extends JFrame {
 				{
 					upButton = new JButton();
 					titlePanel.add(upButton);
-					upButton.setText("Up");
-					upButton.setMargin(new Insets(0, 0, 0, 0));
-					Font font = upButton.getFont();
-					upButton.setFont(new Font(font.getName(), font.getStyle(), font.getSize() - 2));
+					upButton.setIcon(new FlatAscendingSortIcon());
+					upButton.setBorder(new EmptyBorder(upButton.getInsets()));
 				}
 				{
 					downButton = new JButton();
 					titlePanel.add(downButton);
-					downButton.setText("Down");
-					downButton.setMargin(new Insets(0, 0, 0, 0));
-					Font font = downButton.getFont();
-					downButton.setFont(new Font(font.getName(), font.getStyle(), font.getSize() - 2));
+					downButton.setIcon(new FlatDescendingSortIcon());
+					downButton.setBorder(new EmptyBorder(upButton.getInsets()));
 				}
 				{
 					deleteButton = new JButton();
 					titlePanel.add(deleteButton);
-					deleteButton.setText("X");
-					deleteButton.setMargin(new Insets(0, 0, 0, 0));
-					Font font = deleteButton.getFont();
-					deleteButton.setFont(new Font(font.getName(), font.getStyle(), font.getSize() - 2));
+					deleteButton.setIcon(new FlatClearIcon());
+					deleteButton.setBorder(new EmptyBorder(upButton.getInsets()));
 				}
 				{
 					nameLabel = new JLabel(effect.toString());
@@ -1200,7 +1246,7 @@ public class BMFontX extends JFrame {
 
 			upButton.addActionListener(new ActionListener() {
 				public void actionPerformed (ActionEvent evt) {
-					int currentIndex = effectPanels.indexOf(EffectPanel.this);
+					int currentIndex = effectPanels.indexOf(EffectPanel.this, true);
 					if (currentIndex > 0) {
 						moveEffect(currentIndex - 1);
 						updateFont();
@@ -1211,8 +1257,8 @@ public class BMFontX extends JFrame {
 
 			downButton.addActionListener(new ActionListener() {
 				public void actionPerformed (ActionEvent evt) {
-					int currentIndex = effectPanels.indexOf(EffectPanel.this);
-					if (currentIndex < effectPanels.size() - 1) {
+					int currentIndex = effectPanels.indexOf(EffectPanel.this, true);
+					if (currentIndex < effectPanels.size - 1) {
 						moveEffect(currentIndex + 1);
 						updateFont();
 						updateUpDownButtons();
@@ -1234,33 +1280,33 @@ public class BMFontX extends JFrame {
 		}
 
 		public void remove () {
-			effectPanels.remove(this);
+			effectPanels.removeValue(this, true);
 			appliedEffectsPanel.remove(EffectPanel.this);
 			getContentPane().validate();
 			effectsList.getListSelectionListeners()[0].valueChanged(null);
 		}
 
 		public void updateValues () {
-			prefs.put("foreground", EffectUtils.toString(colorEffect.getColor()));
+			prefs.putString("foreground", EffectUtils.toString(colorEffect.getColor()));
 			valuesPanel.removeAll();
 			values = effect.getValues();
 			for (ConfigurableEffect.Value value : values) addValue(value);
 		}
 
 		public void updateUpDownButtons () {
-			for (int index = 0; index < effectPanels.size(); index++) {
+			for (int index = 0; index < effectPanels.size; index++) {
 				EffectPanel effectPanel = effectPanels.get(index);
 				effectPanel.upButton.setEnabled(index != 0);
 
-				effectPanel.downButton.setEnabled(index != effectPanels.size() - 1);
+				effectPanel.downButton.setEnabled(index != effectPanels.size - 1);
 			}
 		}
 
 		public void moveEffect (int newIndex) {
 			appliedEffectsPanel.remove(this);
-			effectPanels.remove(this);
+			effectPanels.removeValue(this, true);
 			appliedEffectsPanel.add(this, constrains, newIndex);
-			effectPanels.add(newIndex, this);
+			effectPanels.insert(newIndex, this);
 		}
 
 		public void addValue (ConfigurableEffect.Value value) {
@@ -1338,13 +1384,14 @@ public class BMFontX extends JFrame {
 			int viewWidth = Gdx.graphics.getWidth();
 			int viewHeight = Gdx.graphics.getHeight();
 
+			if (viewWidth <= 0 || viewHeight <= 0) return;
+
 			if (sampleTextRadio.isSelected()) {
-				GL11.glClearColor(renderingBackgroundColor.r, renderingBackgroundColor.g, renderingBackgroundColor.b,
+				ScreenUtils.clear(renderingBackgroundColor.r, renderingBackgroundColor.g, renderingBackgroundColor.b,
 					renderingBackgroundColor.a);
 			} else {
-				GL11.glClearColor(1, 1, 1, 1);
+				ScreenUtils.clear(1, 1, 1, 1);
 			}
-			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
 
 			String sampleText = sampleTextPane.getText();
 
@@ -1368,11 +1415,11 @@ public class BMFontX extends JFrame {
 
 			if (!unicodeFont.getEffects().isEmpty() && unicodeFont.loadGlyphs(64)) {
 				glyphPageComboModel.removeAllElements();
-				int pageCount = unicodeFont.getGlyphPages().size();
+				int pageCount = unicodeFont.getGlyphPages().size;
 				int glyphCount = 0;
 				for (int i = 0; i < pageCount; i++) {
 					glyphPageComboModel.addElement("Page " + (i + 1));
-					glyphCount += unicodeFont.getGlyphPages().get(i).getGlyphs().size();
+					glyphCount += unicodeFont.getGlyphPages().get(i).getGlyphs().size;
 				}
 				glyphPagesTotalLabel.setText(String.valueOf(pageCount));
 				glyphsTotalLabel.setText(String.valueOf(glyphCount));
@@ -1387,8 +1434,8 @@ public class BMFontX extends JFrame {
 				// renderingBackgroundColor.a);
 				// fillRect(0, 0, unicodeFont.getGlyphPageWidth() + 2, unicodeFont.getGlyphPageHeight() + 2);
 				int index = glyphPageCombo.getSelectedIndex();
-				List<GlyphPage> pages = unicodeFont.getGlyphPages();
-				if (index >= 0 && index < pages.size()) {
+				Array<GlyphPage> pages = unicodeFont.getGlyphPages();
+				if (index >= 0 && index < pages.size) {
 					Texture texture = pages.get(glyphPageCombo.getSelectedIndex()).getTexture();
 
 					glDisable(GL_TEXTURE_2D);
@@ -1424,19 +1471,19 @@ public class BMFontX extends JFrame {
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
 
-			if (saveBmFontFile != null) {
+			if (saveBMFontFile != null) {
 				try {
 					BMFontUtils bmFont = new BMFontUtils(unicodeFont);
-					bmFont.save(saveBmFontFile);
+					bmFont.save(saveBMFontFile);
 
 					if (batchMode) {
 						exit(0);
 					}
 				} catch (Throwable ex) {
-					System.out.println("Error saving BMFont files: " + saveBmFontFile.getAbsolutePath());
+					System.out.println("Error saving BMFont files: " + saveBMFontFile.getAbsolutePath());
 					ex.printStackTrace();
 				} finally {
-					saveBmFontFile = null;
+					saveBMFontFile = null;
 				}
 			}
 		}
@@ -1490,7 +1537,7 @@ public class BMFontX extends JFrame {
 			8353, 8354, 8355, 8356, 8357, 8358, 8359, 8360, 8361, 8363, 8364, 8365, 8366, 8367, 8368, 8369, 8370, 8371, 8372, 8373,
 			8377, 8378, 11360, 11361, 11362, 11363, 11364, 11365, 11366, 11367, 11368, 11369, 11370, 11371, 11372, 11373, 11377,
 			11378, 11379, 11380, 11381, 11382, 11383}) {
-			i++;
+			i ++;
 			if (i > 26) {
 				i = 0;
 				buffer.append("\r\n");
@@ -1500,11 +1547,12 @@ public class BMFontX extends JFrame {
 		EXTENDED_CHARS = buffer.toString();
 	}
 
-	public static void main (String[] args) {
+	public static void main (String[] args) throws Exception {
 		SingleInstanceLock.exitIfOtherInstancesRunning(BMFontX.class.getCanonicalName());
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run () {
 				FlatIntelliJLaf.setup();
+				JColorChooser.setDefaultLocale(Locale.ENGLISH);
 				new BMFontX(args);
 			}
 		});

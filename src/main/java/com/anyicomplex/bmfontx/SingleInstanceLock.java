@@ -35,6 +35,9 @@
  *     limitations under the License.
  */
 
+/*
+ * @author Yi An
+ */
 package com.anyicomplex.bmfontx;
 
 import java.io.File;

@@ -59,9 +59,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /** Stores a number of glyphs on a single texture.
  * @author Nathan Sweet
@@ -70,8 +68,8 @@ public class GlyphPage {
 	private final UnicodeFont unicodeFont;
 	private final int pageWidth, pageHeight;
 	private final Texture texture;
-	private final List<Glyph> pageGlyphs = new ArrayList<>(32);
-	private final List<String> hashes = new ArrayList<>(32);
+	private final Array<Glyph> pageGlyphs = new Array<>(32);
+	private final Array<String> hashes = new Array<>(32);
 	Array<Row> rows = new Array<>();
 
 	/** @param pageWidth The width of the backing texture.
@@ -93,7 +91,7 @@ public class GlyphPage {
 	 * @param maxGlyphsToLoad This is the maximum number of glyphs to load from the list. Set to -1 to attempt to load all the
 	 *           glyphs.
 	 * @return The number of glyphs that were actually loaded. */
-	int loadGlyphs (List<Glyph> glyphs, int maxGlyphsToLoad) {
+	int loadGlyphs (Array<Glyph> glyphs, int maxGlyphsToLoad) {
 		GL11.glColor4f(1, 1, 1, 1);
 		texture.bind();
 
@@ -193,10 +191,12 @@ public class GlyphPage {
 				scratchGraphics.setColor(java.awt.Color.white);
 				scratchGraphics.setFont(unicodeFont.getFont());
 				scratchGraphics.drawString("" + (char)glyph.getCodePoint(), 0, unicodeFont.getAscent());
-			} else if (unicodeFont.getRenderType() == UnicodeFont.RenderType.Java) {
+			}
+			if (unicodeFont.getRenderType() == UnicodeFont.RenderType.Java) {
 				scratchGraphics.setColor(java.awt.Color.white);
-				for (Effect o : unicodeFont.getEffects())
-					o.draw(scratchImage, scratchGraphics, unicodeFont, glyph);
+				for (int i = 0; i < unicodeFont.getEffects().size; i ++) {
+					unicodeFont.getEffects().get(i).draw(scratchImage, scratchGraphics, unicodeFont, glyph);
+				}
 				glyph.setShape(null); // The shape will never be needed again.
 			}
 
@@ -225,7 +225,7 @@ public class GlyphPage {
 		scratchIntBuffer.clear();
 
 		try {
-			for (int i = 0, n = hashes.size(); i < n; i++) {
+			for (int i = 0, n = hashes.size; i < n; i++) {
 				String other = hashes.get(i);
 				if (other.equals(hash)) {
 					Glyph dupe = pageGlyphs.get(i);
@@ -250,7 +250,7 @@ public class GlyphPage {
 	}
 
 	/** Returns the glyphs stored on this page. */
-	public List<Glyph> getGlyphs () {
+	public Array<Glyph> getGlyphs () {
 		return pageGlyphs;
 	}
 

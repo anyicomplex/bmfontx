@@ -37,11 +37,12 @@
 
 package com.anyicomplex.bmfontx.unicodefont.effects;
 
+import com.badlogic.gdx.utils.Array;
+
 import java.awt.*;
 import java.awt.geom.FlatteningPathIterator;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.PathIterator;
-import java.util.List;
 
 /** @author Jerry Huxtable
  * @author Nathan Sweet
@@ -62,16 +63,16 @@ public class OutlineWobbleEffect extends OutlineEffect {
 		return "Outline (Wobble)";
 	}
 
-	public List<Value> getValues () {
-		List<Value> values = super.getValues();
-		values.remove(2); // Remove "Join".
+	public Array<Value> getValues () {
+		Array<Value> values = super.getValues();
+		values.removeIndex(2); // Remove "Join".
 		values.add(EffectUtils.floatValue("Detail", detail, 1, 50,
 			"This setting controls how detailed the outline will be. " + "Smaller numbers cause the outline to have more detail."));
 		values.add(EffectUtils.floatValue("Amplitude", amplitude, 0.5f, 50, "This setting controls the amplitude of the outline."));
 		return values;
 	}
 
-	public void setValues (List<Value> values) {
+	public void setValues (Array<Value> values) {
 		super.setValues(values);
 		for (Value value : values) {
 			if (value.getName().equals("Detail")) {

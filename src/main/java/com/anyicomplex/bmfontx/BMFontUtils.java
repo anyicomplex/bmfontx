@@ -41,6 +41,7 @@ import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.GlyphPage;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntIntMap;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -56,12 +57,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 
-/** @author Nathan Sweet */
+/** @author Nathan Sweet
+ * @modifier Yi An */
 public class BMFontUtils {
 	private final UnicodeFont unicodeFont;
 
@@ -89,7 +89,7 @@ public class BMFontUtils {
 			+ unicodeFont.getPaddingLeft() + " spacing=" + unicodeFont.getPaddingAdvanceX() + ","
 			+ unicodeFont.getPaddingAdvanceY());
 		out.println("common lineHeight=" + unicodeFont.getLineHeight() + " base=" + unicodeFont.getAscent() + " scaleW=" + pageWidth
-			+ " scaleH=" + pageHeight + " pages=" + unicodeFont.getGlyphPages().size() + " packed=0");
+			+ " scaleH=" + pageHeight + " pages=" + unicodeFont.getGlyphPages().size + " packed=0");
 
 		int pageIndex = 0, glyphCount = 0;
 		for (Iterator<GlyphPage> pageIter = unicodeFont.getGlyphPages().iterator(); pageIter.hasNext();) {
@@ -100,16 +100,16 @@ public class BMFontUtils {
 			else
 				fileName = outputName + (pageIndex + 1) + ".png";
 			out.println("page id=" + pageIndex + " file=\"" + fileName + "\"");
-			glyphCount += page.getGlyphs().size();
+			glyphCount += page.getGlyphs().size;
 			pageIndex++;
 		}
 
 		out.println("chars count=" + glyphCount);
 
 		pageIndex = 0;
-		List<Glyph> allGlyphs = new ArrayList<>(512);
+		Array<Glyph> allGlyphs = new Array<>(512);
 		for (GlyphPage page : unicodeFont.getGlyphPages()) {
-			List<Glyph> glyphs = page.getGlyphs();
+			Array<Glyph> glyphs = page.getGlyphs();
 			glyphs.sort(new Comparator<Glyph>() {
 				public int compare(Glyph o1, Glyph o2) {
 					return o1.getCodePoint() - o2.getCodePoint();
@@ -142,7 +142,7 @@ public class BMFontUtils {
 			class KerningPair {
 				public int firstCodePoint, secondCodePoint, offset;
 			}
-			List<KerningPair> kernings = new ArrayList<>(256);
+			Array<KerningPair> kernings = new Array<>(256);
 			for (IntIntMap.Entry entry : kerning.getKernings()) {
 				int firstGlyphCode = entry.key >> 16;
 				int secondGlyphCode = entry.key & 0xffff;
@@ -161,7 +161,7 @@ public class BMFontUtils {
 				pair.offset = offset;
 				kernings.add(pair);
 			}
-			out.println("kernings count=" + kernings.size());
+			out.println("kernings count=" + kernings.size);
 			for (KerningPair pair : kernings) {
 				out.println("kerning first=" + pair.firstCodePoint + " second=" + pair.secondCodePoint + " amount=" + pair.offset);
 			}

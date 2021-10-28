@@ -37,6 +37,8 @@
 
 package com.anyicomplex.bmfontx.unicodefont.effects;
 
+import com.badlogic.gdx.utils.Array;
+
 import java.util.List;
 
 /** An effect that has a number of configuration values. This allows the effect to be configured in the BMFontX GUI and to be saved
@@ -45,27 +47,27 @@ import java.util.List;
  * @modifier Yi An */
 public interface ConfigurableEffect extends Effect {
 	/** Returns the list of {@link Value}s for this effect. This list is not typically backed by the effect, so changes to the
-	 * values will not take affect until {@link #setValues(List)} is called. */
-	public List<Value> getValues ();
+	 * values will not take affect until {@link #setValues(Array)} is called. */
+	Array<Value> getValues();
 
 	/** Sets the list of {@link Value}s for this effect. */
-	public void setValues (List<Value> values);
+	void setValues(Array<Value> values);
 
 	/** Represents a configurable value for an effect. */
-	static public interface Value {
+	interface Value {
 		/** Returns the name of the value. */
-		public String getName ();
+		String getName();
 
 		/** Sets the string representation of the value. */
-		public void setString (String value);
+		void setString(String value);
 
 		/** Gets the string representation of the value. */
-		public String getString ();
+		String getString();
 
 		/** Gets the object representation of the value. */
-		public Object getObject ();
+		Object getObject();
 
 		/** Shows a dialog allowing a user to configure this value. */
-		public void showDialog ();
+		void showDialog();
 	}
 }

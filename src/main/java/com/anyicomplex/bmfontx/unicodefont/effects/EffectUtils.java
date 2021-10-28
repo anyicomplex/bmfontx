@@ -202,11 +202,15 @@ public class EffectUtils {
 
 		public boolean showValueDialog (final JComponent component, String description) {
 			ValueDialog dialog = new ValueDialog(component, name, description);
-			dialog.setTitle(name);
+			dialog.setMinimumSize(dialog.getSize());
 			dialog.setLocationRelativeTo(null);
 			EventQueue.invokeLater(new Runnable() {
 				public void run () {
 					JComponent focusComponent = component;
+					dialog.setMinimumSize(new Dimension(
+							Math.max(dialog.getWidth(), (focusComponent.getWidth() + focusComponent.getBounds().width)),
+							dialog.getHeight() + focusComponent.getHeight() + focusComponent.getBounds().height
+					));
 					if (focusComponent instanceof JSpinner)
 						focusComponent = ((JSpinner.DefaultEditor)((JSpinner)component).getEditor()).getTextField();
 					focusComponent.requestFocusInWindow();
