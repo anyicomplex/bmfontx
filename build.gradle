@@ -5,8 +5,8 @@ plugins {
 ext {
     mainClassName = 'com.anyicomplex.bmfontx.BMFontX'
     appName = 'BMFontX'
-    appVersion = '0.0.2'
-    appVersionCode = 3
+    appVersion = '0.0.3'
+    appVersionCode = 6
     flatlafVersion = '1.6.1'
     gdxVersion = '1.10.0'
 }

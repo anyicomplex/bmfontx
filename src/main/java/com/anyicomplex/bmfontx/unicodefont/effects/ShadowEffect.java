@@ -20,15 +20,10 @@ import com.anyicomplex.bmfontx.unicodefont.Glyph;
 import com.anyicomplex.bmfontx.unicodefont.UnicodeFont;
 import com.badlogic.gdx.utils.Array;
 
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Composite;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
-import java.util.Iterator;
 
 /** @author Nathan Sweet */
 public class ShadowEffect implements ConfigurableEffect {

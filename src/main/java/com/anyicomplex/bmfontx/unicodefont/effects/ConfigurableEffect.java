@@ -39,8 +39,6 @@ package com.anyicomplex.bmfontx.unicodefont.effects;
 
 import com.badlogic.gdx.utils.Array;
 
-import java.util.List;
-
 /** An effect that has a number of configuration values. This allows the effect to be configured in the BMFontX GUI and to be saved
  * and loaded to and from a file.
  * @author Nathan Sweet
